@@ -1,5 +1,7 @@
 # home-ide-developer
 
+🇺🇸 English | [🇯🇵 日本語](README.ja.md)
+
 > **Your home directory is an IDE.**
 
 This is not a collection of configuration files.

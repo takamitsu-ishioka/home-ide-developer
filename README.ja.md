@@ -1,5 +1,7 @@
 # home-ide-developer
 
+[🇺🇸 English](README.md) | 🇯🇵 日本語
+
 > **ホームディレクトリは、IDEである。**
 
 これは設定ファイル集ではありません。
