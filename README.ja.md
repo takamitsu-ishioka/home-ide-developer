@@ -231,7 +231,7 @@ C:\Temp\foobar.md
 
 そして続けました。
 
-> [「文科省はWindowsを禁止せよ(笑)」](/assets/home-ide-developer.png)
+> [「文科省はWindowsを禁止せよ(笑)」](https://note.com/kisaburo_y/n/n310e49c9483d)
 
 後半については各自でご判断ください。
 
