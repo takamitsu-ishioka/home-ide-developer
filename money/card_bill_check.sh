@@ -30,10 +30,10 @@ now() {
 echo "$(now) ${script_basename}: claudeに ${csv_file} の検算を依頼中... (数十秒かかることがあります)" >&2
 
 set +e
-echo "${csv_file}を検算できますか？{sum: 金額, equal: boolean} だけ出力してください。確認はすべてyesです。" \
-  | claude -p --allowedTools "Read Bash(awk:*) Bash(python3:*)" \
-  | cat
-result_status="${PIPESTATUS[1]}"
+claude -p --allowedTools "Read Bash(awk:*) Bash(python3:*)" <<EOF | cat
+${csv_file}を検算できますか？{sum: 金額, equal: boolean} だけ出力してください。確認はすべてyesです。
+EOF
+result_status="${PIPESTATUS[0]}"
 set -e
 
 if [ "$result_status" -eq 0 ]; then
