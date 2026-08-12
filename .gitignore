@@ -1,0 +1,60 @@
+# ============================================================
+# home-ide-developer / .gitignore
+#
+# 方針:
+#   - 機密情報・巨大ファイル・二次情報(キャッシュ/ログ/生成物)は untrack
+#   - それ以外(コード・設定・ツール・一次文書)は追跡する
+#
+# 参照: ~/.claude/CLAUDE.md 大前提1,2 / 小前提
+# ============================================================
+
+# --- 機密情報: 認証情報・鍵 ---
+.ssh/
+.env
+.env.*
+!.env.template
+!.env.example
+!.env.*.template
+.codex/auth.json
+.claude.json
+.config/gh/hosts.yml
+
+# --- ツール状態・キャッシュ (再生成可能な二次情報) ---
+.cache/
+.local/
+.vscode-server/
+.codex/
+.npm/
+.dotnet/
+.copilot/
+.config/
+snap/
+
+# --- .claude: 一次情報(仕様書・設定)のみ追跡し、他は除外 ---
+.claude/*
+!.claude/CLAUDE.md
+!.claude/CLAUDE.en.md
+!.claude/settings.json
+!.claude/keybindings.json
+
+# --- シェル/エディタの履歴 (端末固有・二次情報) ---
+.bash_history
+.lesshst
+.viminfo
+.wget-hsts
+.motd_shown
+.sudo_as_admin_successful
+
+# --- 巨大ファイル・生成物 ---
+bin.tgz
+bin/openapi-generator-cli.jar
+bin/freee.tgz
+**/__pycache__/
+*.pyc
+
+# --- 一時作業領域・二次データ (機密性の高い個人情報を含む) ---
+tmp/
+money/*.csv
+
+# --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
+/ghost/

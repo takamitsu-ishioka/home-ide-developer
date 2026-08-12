@@ -1,0 +1,18 @@
+{
+  // summary: "[プレフィックス] タイトル #GitHubのissue番号"
+  // プレフィックスの慣習例: [FEATURE] [ENHANCEMENT] [BUG] [TASK]
+  "summary": "[KNOWLEDGE] AI知識ベース機構(~/.claude/knowledge/)の導入 #507",
+  // github_issue_url: GitHub の issue または PR の URL
+  "github_issue_url": "https://github.com/uenoyama-dominosoft/fl-mmwave/issues/507",
+  // issuetype_id (省略時: 10014 機能追加)
+  //   10004  エピック
+  //   10007  結合テスト仕様書作成
+  //   10010  タスク
+  //   10012  仕様／設計書作成
+  //   10013  サブタスク
+  //   10014  機能追加
+  //   10015  アドホックテスト
+  //   10016  バグ
+  //   10017  結合テスト
+  "issuetype_id": "10010"
+}
