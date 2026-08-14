@@ -96,7 +96,7 @@ Example: initialize.sh
   - No default values, in principle
   - Input is stdin, in principle
   - Output is stdout, in principle
-  - Messages/logs go to stderr
+  - Messages/logs go to stderr (in English)
   - Running with no arguments, or with invalid options or the wrong number of arguments, shows usage and a description of the functionality on stderr
     - The usage format is:
       ```
