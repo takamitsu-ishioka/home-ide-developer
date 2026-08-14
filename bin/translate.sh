@@ -1,12 +1,12 @@
 #!/bin/bash
 # Markdown文書(stdin)を<src_lang>から<dst_lang>へ翻訳し、stdoutへ出力する。
-# 実体は translate.py。claude -p を "## " 見出し単位のチャンクごとに呼び出し、
-# 改行保存規約(行末のゼロ幅スペース+半角スペース2つ等)を含めた
-# 行単位の構造を保ったまま翻訳する。
+# 文書全体を一度だけ claude -p に渡すだけの単純な実装。
+# 見出し単位のチャンク分割・改行保存の強制・プロンプトインジェクション対策の
+# 長文などの「賢い」制約は付けない。過去にそうした制約が原因で、短い一文に
+# claudeが過剰反応し翻訳全体が失敗する事故を起こしたため。
 set -euo pipefail
 
 BASENAME="$(basename "$0")"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   {
@@ -23,4 +23,46 @@ if [ "$#" -ne 2 ]; then
   exit 1
 fi
 
-exec python3 "$SCRIPT_DIR/translate.py" "$1" "$2"
+src_lang="$1"
+dst_lang="$2"
+
+lang_name() {
+  case "$1" in
+    ja) echo "Japanese" ;;
+    en) echo "English" ;;
+    zh) echo "Chinese" ;;
+    ko) echo "Korean" ;;
+    fr) echo "French" ;;
+    de) echo "German" ;;
+    es) echo "Spanish" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+src_name="$(lang_name "$src_lang")"
+dst_name="$(lang_name "$dst_lang")"
+
+system_prompt="You translate a Markdown document from ${src_name} to ${dst_name}.
+
+- Translate the entire document faithfully, including headings, list items, and natural-language text inside fenced code blocks.
+- Preserve the Markdown structure and line breaks as closely as possible.
+- Do not translate URLs, code, command names, or literal file/path names.
+- Output ONLY the translated document. No preamble, no commentary, no surrounding code fence."
+
+now() {
+  TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S(JST)'
+}
+
+echo "$(now) ${BASENAME}: claudeに ${src_name} → ${dst_name} の翻訳を依頼中... (文書が長いと数分かかることがあります)" >&2
+
+set +e
+claude -p --allowedTools "" --model sonnet --system-prompt "$system_prompt" --output-format text
+result_status=$?
+set -e
+
+if [ "$result_status" -eq 0 ]; then
+  echo "$(now) ${BASENAME}: 完了 (exit ${result_status})。次に: 出力内容を確認してください。" >&2
+else
+  echo "$(now) ${BASENAME}: 失敗 (exit ${result_status})。次に: claude CLIの認証状態・ネットワークを確認し、再実行してください。" >&2
+  exit "$result_status"
+fi
