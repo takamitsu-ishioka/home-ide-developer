@@ -58,15 +58,17 @@ bin/freee.tgz
 tmp/
 money/*.csv
 
-# --- マシン固有マーカー (機密ではないが、同一リポジトリの clone 先ごとに
-#     値が異なるため、.env と同様 template のみ追跡しユーザーが手動作成) ---
-/environment_name
-!/environment_name.template
-
-# --- Claude Code セッションの「カレント・リポジトリ」状態 (machine-local。
-#     current_repo_set.sh が自動生成するのみで、ユーザーが手で書くもの
-#     ではないので environment_name と違い template は無し) ---
-/current_repo
+# --- .home-ide-developer/ (ローカルルートリポジトリ専用データ置き場。
+#     ディレクトリ名自体がキャッシュされたリポジトリ名 -- repo_name_sync.sh
+#     が同期するので、名前が変わってもここのパターンは追従不要。ただし
+#     もしリポジトリ名を変更した場合は、このパスもあわせて手動更新する)
+#   - environment_name: マシン固有(機密ではないが clone 先ごとに値が異なる
+#     ため .env と同様 template のみ追跡しユーザーが手動作成)
+#   - current_repo: Claude Code セッションの「カレント・リポジトリ」状態
+#     (current_repo_set.sh が自動生成するのみ。template は無し) ---
+.home-ide-developer/environment_name
+!.home-ide-developer/environment_name.template
+.home-ide-developer/current_repo
 
 # --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
 /ghost/

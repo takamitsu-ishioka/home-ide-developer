@@ -38,13 +38,8 @@ name="${name%.git}"
 target="$HOME/.$name"
 sentinel=".repo-name-marker"
 
-if [ -d "$target" ] && [ -f "$target/$sentinel" ]; then
-  exit 0
-fi
-
-current="$(find "$HOME" -maxdepth 2 -type f -name "$sentinel" 2>/dev/null | head -1)"
-if [ -n "$current" ]; then
-  current_dir="$(dirname "$current")"
+current_dir="$(repo_local_dir.sh 2>/dev/null || true)"
+if [ -n "$current_dir" ]; then
   if [ "$current_dir" != "$target" ]; then
     mv "$current_dir" "$target"
     echo "$BASENAME: renamed $(basename "$current_dir") -> $(basename "$target") (repo name changed)" >&2
