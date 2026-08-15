@@ -1,6 +1,6 @@
 """List GitHub repositories that are candidates for "created by me".
 
-Called only from repos_list.sh (see docs/CLAUDE.md scripting rules: python
+Called only from github_repos_list.sh (see docs/CLAUDE.md scripting rules: python
 is always a thin-wrapped implementation, never run standalone).
 
 Combines two sources:

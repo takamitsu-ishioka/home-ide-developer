@@ -117,6 +117,7 @@ if ! shopt -oq posix; then
 fi
 
 export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/bin/github:$PATH"
 export GDRIVE="/mnt/c/Users/kisab/Google ドライブ"
 alias note='cd /mnt/c/Projects/note'
 alias now='date "+%Y-%m-%d %H:%M:%S"'

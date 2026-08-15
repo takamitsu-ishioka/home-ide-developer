@@ -41,4 +41,4 @@ case "$1" in
     ;;
 esac
 
-exec python3 "$SCRIPT_DIR/repos_list.py" "$1"
+exec python3 "$SCRIPT_DIR/github_repos_list.py" "$1"
