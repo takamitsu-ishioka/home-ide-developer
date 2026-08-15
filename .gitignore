@@ -36,6 +36,8 @@ snap/
 !.claude/CLAUDE.en.md
 !.claude/settings.json
 !.claude/keybindings.json
+!.claude/skills/
+!.claude/skills/**
 
 # --- シェル/エディタの履歴 (端末固有・二次情報) ---
 .bash_history
