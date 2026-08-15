@@ -57,8 +57,7 @@ def org_repos(org: str, allowlist: set[str]) -> list[dict]:
     )
     admin_repos = [r for r in repos if r.pop("viewerCanAdminister")]
     for r in admin_repos:
-        name = r["nameWithOwner"].split("/", 1)[1]
-        r["createdByMe"] = name in allowlist
+        r["createdByMe"] = r["nameWithOwner"] in allowlist
     return admin_repos
 
 

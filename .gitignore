@@ -56,5 +56,10 @@ bin/freee.tgz
 tmp/
 money/*.csv
 
+# --- マシン固有マーカー (機密ではないが、同一リポジトリの clone 先ごとに
+#     値が異なるため、.env と同様 template のみ追跡しユーザーが手動作成) ---
+/environment_name
+!/environment_name.template
+
 # --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
 /ghost/
