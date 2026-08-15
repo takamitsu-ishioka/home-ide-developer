@@ -5,9 +5,11 @@ always a thin-wrapped implementation, never run standalone).
 
 Fields: environment (LOCAL/ALPHA/BETA/PROD, from ~/environment_name --
 untracked, machine-local, see environment_name.template), hostname, cwd,
-git_repo, git_branch, git_remote. Any field whose source is unavailable
-(no marker file, not inside a git repo, no "origin" remote) is empty/null
-rather than guessed.
+git_repo, git_branch, git_remote, github_url (git_remote translated to its
+https://github.com/OWNER/REPO web page, only when the remote is actually a
+github.com one). Any field whose source is unavailable (no marker file,
+not inside a git repo, no "origin" remote, remote isn't github.com) is
+empty/null rather than guessed.
 """
 import json
 import re
@@ -41,6 +43,19 @@ def repo_name(remote_url: str, git_toplevel: str) -> str:
     return Path(git_toplevel).name
 
 
+GITHUB_REMOTE_RE = re.compile(
+    r"^(?:git@github\.com:|https://github\.com/|ssh://git@github\.com/)"
+    r"(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?$"
+)
+
+
+def github_url(remote_url: str) -> str:
+    match = GITHUB_REMOTE_RE.match(remote_url)
+    if not match:
+        return ""
+    return f"https://github.com/{match['owner']}/{match['repo']}"
+
+
 def collect() -> dict:
     git_toplevel = git("rev-parse", "--show-toplevel")
     git_remote = git("remote", "get-url", "origin") if git_toplevel else ""
@@ -51,6 +66,7 @@ def collect() -> dict:
         "git_repo": repo_name(git_remote, git_toplevel) if git_toplevel else "",
         "git_branch": git("rev-parse", "--abbrev-ref", "HEAD") if git_toplevel else "",
         "git_remote": git_remote,
+        "github_url": github_url(git_remote),
     }
 
 
@@ -62,7 +78,7 @@ def main() -> None:
         print(
             "\t".join(
                 info[k]
-                for k in ("environment", "hostname", "cwd", "git_repo", "git_branch", "git_remote")
+                for k in ("environment", "hostname", "cwd", "git_repo", "git_branch", "git_remote", "github_url")
             )
         )
     else:

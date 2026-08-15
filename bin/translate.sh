@@ -65,7 +65,15 @@ cat > "$tmp_in"
 # standard input redirected to /dev/null unless explicitly redirected
 # (bash/POSIX behavior). To make sure the piped-in document actually
 # reaches claude, pass it explicitly via a temp file.
-claude -p --allowedTools "" --model sonnet --system-prompt "$system_prompt" --output-format text \
+#
+# --safe-mode: claude -p otherwise auto-loads the invoking directory's own
+# CLAUDE.md as system context. When the document being translated IS a
+# project's CLAUDE.md, that handed the model the same content twice (once
+# as "your instructions", once as the text to translate), which was
+# observed to make it refuse the whole document, claiming no input was
+# given. --safe-mode disables CLAUDE.md/skills/plugins/etc auto-loading
+# without touching auth, which the more surgical --bare would have.
+claude -p --safe-mode --allowedTools "" --model sonnet --system-prompt "$system_prompt" --output-format text \
   < "$tmp_in" > "$tmp_out" &
 claude_pid=$!
 
