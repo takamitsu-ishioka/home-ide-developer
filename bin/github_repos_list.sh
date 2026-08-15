@@ -3,8 +3,9 @@
 # Forks are excluded (gh repo list --source), since a fork isn't a
 # repository the user created.
 # tsv: name_with_owner, visibility, created_at, pushed_at, description, url
-#      -- sorted by created_at, oldest first.
-# json: gh's native JSON array for the same fields, in gh's default order.
+# json: gh's native JSON array for the same fields
+# Both are in whatever order gh returns (observed: pushed_at descending;
+# gh repo list has no --sort flag to control or guarantee this).
 set -euo pipefail
 
 BASENAME="$(basename "$0")"
@@ -48,7 +49,7 @@ if [ "$format" = "tsv" ]; then
   gh repo list "$owner" --source --no-archived -L 1000 \
     --json nameWithOwner,visibility,createdAt,pushedAt,description,url \
     -t '{{range .}}{{.nameWithOwner}}	{{.visibility}}	{{.createdAt}}	{{.pushedAt}}	{{.description}}	{{.url}}
-{{end}}' | sort -t $'\t' -k3,3 > "$tmp_out"
+{{end}}' > "$tmp_out"
   count=$(wc -l < "$tmp_out")
 else
   gh repo list "$owner" --source --no-archived -L 1000 \
