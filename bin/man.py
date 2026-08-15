@@ -9,6 +9,7 @@ Usage:
 OPTIONS:
   --depth N       Maximum tree depth to display (default: 2, env: MAN_DEPTH)
   --width N       Maximum items per directory (default: unlimited, env: MAN_WIDTH)
+  -A, --all       Show dotfiles too (hidden by default, like ls -A)
   --help          Show this help message
 
 EXAMPLES:
@@ -17,13 +18,49 @@ EXAMPLES:
   man.sh mmwave/blob               # Show blob subtree
   man.sh --depth 3 mmwave          # Show mmwave with depth 3
   man.sh --width 10 mmwave         # Show mmwave with max 10 items per dir
+  man.sh -A                        # Also show dotfiles
   man.sh azure_storage_explore.sh  # Show file details
 """
 
 import os
+import subprocess
 import sys
 import argparse
 from pathlib import Path
+
+
+def git_repo_name(path):
+    """If `path` is a git repository root, return its name (from the
+    "origin" remote's URL, falling back to the directory's own basename
+    when there's no remote) -- else None. The remote's own name is
+    preferred because a checkout directory's basename need not match it
+    (e.g. this repo is cloned at ~/, whose basename is the Linux username
+    "developer", not the GitHub repo name "home-ide-developer")."""
+    if not os.path.exists(os.path.join(path, '.git')):
+        return None
+    try:
+        result = subprocess.run(
+            ['git', '-C', path, 'remote', 'get-url', 'origin'],
+            capture_output=True, text=True, timeout=5,
+        )
+    except OSError:
+        result = None
+    if result and result.returncode == 0 and result.stdout.strip():
+        name = result.stdout.strip().rsplit('/', 1)[-1]
+        if name.endswith('.git'):
+            name = name[:-4]
+        return name
+    return os.path.basename(path.rstrip('/'))
+
+# tree-style coloring: directories blue, executables green, everything else
+# (markdown, Makefiles) uncolored, annotations dim. Auto-detected -- on only
+# when stdout is a terminal and NO_COLOR isn't set, same convention `ls`/
+# `grep`/`tree` use, so piped/redirected output stays plain.
+COLOR = sys.stdout.isatty() and not os.environ.get('NO_COLOR')
+BLUE = "\033[1;34m" if COLOR else ""
+GREEN = "\033[1;32m" if COLOR else ""
+DIM = "\033[2m" if COLOR else ""
+RESET = "\033[0m" if COLOR else ""
 
 
 def get_header_summary(file_path):
@@ -83,7 +120,24 @@ def is_ignored(path, parent_dir):
     return False
 
 
-def tree_walk(directory, prefix="", depth=0, max_depth=2, max_width=0):
+def find_command(bin_dir, name):
+    """Search the ~/bin tree for a file named exactly `name`, the way a
+    command is found by basename regardless of which subdirectory (e.g.
+    bin/github/) it lives in. Skips dotdirs and .man_ignore'd dirs, same
+    as the tree display. Returns the list of matching paths (0, 1, or
+    more -- more means the name is ambiguous)."""
+    matches = []
+    for root, dirnames, filenames in os.walk(bin_dir):
+        dirnames[:] = [
+            d for d in dirnames
+            if not d.startswith('.') and not is_ignored(os.path.join(root, d), root)
+        ]
+        if name in filenames:
+            matches.append(os.path.join(root, name))
+    return matches
+
+
+def tree_walk(directory, prefix="", depth=0, max_depth=2, max_width=0, show_all=False):
     """Walk directory tree and print with tree format."""
 
     # Collect files and dirs, preserving `ls`-style alphabetical order
@@ -92,6 +146,8 @@ def tree_walk(directory, prefix="", depth=0, max_depth=2, max_width=0):
 
     try:
         for item in sorted(os.listdir(directory)):
+            if item.startswith('.') and not show_all:
+                continue
             item_path = os.path.join(directory, item)
 
             if os.path.isfile(item_path):
@@ -123,36 +179,47 @@ def tree_walk(directory, prefix="", depth=0, max_depth=2, max_width=0):
         item_name = os.path.basename(item_path)
 
         if item_type == 'file':
-            print(f"{prefix}{branch}{item_name}")
+            is_exec = os.access(item_path, os.X_OK)
+            color = GREEN if is_exec else ""
+            print(f"{prefix}{branch}{color}{item_name}{RESET}")
         elif item_type == 'dir':
-            # Check if directory is empty
+            # Check if directory is empty (from what this tree would show:
+            # dotfiles don't count as content unless show_all is set)
             try:
-                contents = [x for x in os.listdir(item_path) if not is_ignored(os.path.join(item_path, x), item_path)]
+                contents = [
+                    x for x in os.listdir(item_path)
+                    if not is_ignored(os.path.join(item_path, x), item_path)
+                    and (show_all or not x.startswith('.'))
+                ]
                 is_empty = len(contents) == 0
             except PermissionError:
                 is_empty = False
 
+            repo = git_repo_name(item_path)
+            repo_suffix = f" {DIM}({repo}){RESET}" if repo else ""
+
             if is_empty:
-                print(f"{prefix}{branch}{item_name}/ (empty)")
+                print(f"{prefix}{branch}{BLUE}{item_name}/{RESET}{repo_suffix} {DIM}(empty){RESET}")
             else:
-                print(f"{prefix}{branch}{item_name}/")
+                print(f"{prefix}{branch}{BLUE}{item_name}/{RESET}{repo_suffix}")
                 if depth < max_depth:
                     next_prefix = prefix + ("    " if is_last else "│   ")
-                    tree_walk(item_path, next_prefix, depth + 1, max_depth, max_width)
+                    tree_walk(item_path, next_prefix, depth + 1, max_depth, max_width, show_all)
         elif item_type == 'ignored':
-            print(f"{prefix}{branch}{item_name}/ (ignored)")
+            print(f"{prefix}{branch}{DIM}{item_name}/ (ignored){RESET}")
 
     # Print "(N more)" if items were truncated
     if more_count > 0:
         is_last = True
         branch = "└── "
-        print(f"{prefix}{branch}({more_count} more)")
+        print(f"{prefix}{branch}{DIM}({more_count} more){RESET}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--depth', type=int, default=None, help='Maximum tree depth (default: 2)')
     parser.add_argument('--width', type=int, default=None, help='Maximum items per directory (default: unlimited)')
+    parser.add_argument('-A', '--all', action='store_true', help='Show dotfiles too (like ls -A; hidden by default)')
     parser.add_argument('target', nargs='?', default='.', help='Path or command to show')
 
     args = parser.parse_args()
@@ -180,6 +247,22 @@ def main():
         elif os.path.exists(bin_target):
             target_dir = bin_target
             display_name = args.target
+        elif '/' not in args.target:
+            # Not found as a direct child of cwd or ~/bin -- try resolving
+            # it as a command name anywhere in the ~/bin tree (e.g.
+            # bin/github/github_repos_list.sh, found by just the basename).
+            matches = find_command(bin_dir, args.target)
+            if len(matches) == 1:
+                target_dir = matches[0]
+                display_name = os.path.relpath(matches[0], bin_dir)
+            elif len(matches) > 1:
+                print(f"man.sh: ambiguous command: {args.target}", file=sys.stderr)
+                for m in matches:
+                    print(f"  {os.path.relpath(m, bin_dir)}", file=sys.stderr)
+                sys.exit(1)
+            else:
+                target_dir = None
+                display_name = args.target
         else:
             target_dir = None
             display_name = args.target
@@ -189,8 +272,9 @@ def main():
         sys.exit(1)
 
     if os.path.isdir(target_dir):
-        print(display_name)
-        tree_walk(target_dir, "", 0, max_depth, max_width)
+        repo = git_repo_name(target_dir)
+        print(f"{display_name} {DIM}({repo}){RESET}" if repo else display_name)
+        tree_walk(target_dir, "", 0, max_depth, max_width, args.all)
     elif os.path.isfile(target_dir):
         # Show file details
         print(display_name)

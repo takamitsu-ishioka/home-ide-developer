@@ -27,5 +27,18 @@
       "**Org-specific CLIs**: None configured",
       "routine under takamitsu-ishioka/ prefix on github.com is the user's own trusted repo scope"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/bin/repo_name_sync.sh\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
   }
 }

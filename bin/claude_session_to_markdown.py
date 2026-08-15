@@ -3,7 +3,17 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timedelta, timezone
 from glob import glob
+
+JST = timezone(timedelta(hours=9))
+
+
+def to_jst(timestamp: str) -> str:
+    if not timestamp:
+        return ''
+    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+    return dt.astimezone(JST).strftime('%Y-%m-%dT%H:%M:%S')
 
 SYSTEM_TAG_PATTERN = re.compile(
     r'<(?:ide_selection|ide_opened_file|system-reminder|command-name)[^>]*>.*?</(?:ide_selection|ide_opened_file|system-reminder|command-name)>',
@@ -52,11 +62,14 @@ def convert(jsonl_path):
             else:
                 text = extract_assistant_text(content)
             if text:
-                messages.append((t, text))
+                messages.append((t, obj.get('timestamp', ''), text))
 
     out = []
-    for role, text in messages:
+    for role, timestamp, text in messages:
         heading = '## 私：' if role == 'user' else '## Claude:'
+        jst = to_jst(timestamp)
+        if jst:
+            heading = f'{heading} {jst}'
         out.append(f'{heading}\n{text}')
 
     print('\n\n'.join(out))
