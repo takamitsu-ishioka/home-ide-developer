@@ -63,5 +63,10 @@ money/*.csv
 /environment_name
 !/environment_name.template
 
+# --- Claude Code セッションの「カレント・リポジトリ」状態 (machine-local。
+#     current_repo_set.sh が自動生成するのみで、ユーザーが手で書くもの
+#     ではないので environment_name と違い template は無し) ---
+/current_repo
+
 # --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
 /ghost/
