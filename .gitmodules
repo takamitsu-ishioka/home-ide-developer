@@ -1,0 +1,3 @@
+[submodule "note-article-manager"]
+	path = note-article-manager
+	url = https://github.com/takamitsu-ishioka/note-article-manager
