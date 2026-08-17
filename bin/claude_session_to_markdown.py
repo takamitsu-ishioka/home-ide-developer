@@ -3,17 +3,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
 from glob import glob
-
-JST = timezone(timedelta(hours=9))
-
-
-def to_jst(timestamp: str) -> str:
-    if not timestamp:
-        return ''
-    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-    return dt.astimezone(JST).strftime('%Y-%m-%dT%H:%M:%S')
 
 SYSTEM_TAG_PATTERN = re.compile(
     r'<(?:ide_selection|ide_opened_file|system-reminder|command-name)[^>]*>.*?</(?:ide_selection|ide_opened_file|system-reminder|command-name)>',
@@ -62,14 +52,11 @@ def convert(jsonl_path):
             else:
                 text = extract_assistant_text(content)
             if text:
-                messages.append((t, obj.get('timestamp', ''), text))
+                messages.append((t, text))
 
     out = []
-    for role, timestamp, text in messages:
+    for role, text in messages:
         heading = '## 私：' if role == 'user' else '## Claude:'
-        jst = to_jst(timestamp)
-        if jst:
-            heading = f'{heading} {jst}'
         out.append(f'{heading}\n{text}')
 
     print('\n\n'.join(out))
@@ -77,24 +64,27 @@ def convert(jsonl_path):
 
 def list_sessions():
     projects_dir = os.path.expanduser('~/.claude/projects')
-    jsonl_files = glob(os.path.join(projects_dir, '**', '*.jsonl'), recursive=True)
+    # subagents/ holds forked-agent transcripts, not top-level sessions - excluded from the listing
+    jsonl_files = [
+        path
+        for path in glob(os.path.join(projects_dir, '**', '*.jsonl'), recursive=True)
+        if f'{os.sep}subagents{os.sep}' not in path
+    ]
 
     sessions = []
     for path in jsonl_files:
         session_id = os.path.splitext(os.path.basename(path))[0]
-        first_timestamp = None
         ai_title = ''
         try:
             with open(path, encoding='utf-8') as f:
                 for line in f:
                     obj = json.loads(line)
-                    if first_timestamp is None:
-                        first_timestamp = obj.get('timestamp', '')
                     if obj.get('type') == 'ai-title':
                         ai_title = obj.get('aiTitle', '')
         except Exception:
             continue
-        sessions.append((first_timestamp or '', session_id, ai_title))
+        # mtime = time of the last write to this session file (last-appended message)
+        sessions.append((os.path.getmtime(path), session_id, ai_title))
 
     sessions.sort(reverse=True)
 
