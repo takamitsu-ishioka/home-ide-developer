@@ -65,10 +65,13 @@ money/*.csv
 #   - environment_name: マシン固有(機密ではないが clone 先ごとに値が異なる
 #     ため .env と同様 template のみ追跡しユーザーが手動作成)
 #   - current_repo: Claude Code セッションの「カレント・リポジトリ」状態
-#     (current_repo_set.sh が自動生成するのみ。template は無し) ---
+#     (current_repo_set.sh が自動生成するのみ。template は無し)
+#   - rate_limits_cache.json: Claude.aiのレート制限%(current_repo_statusline.sh
+#     がstatusLineフック経由で自動生成。OAuthトークン自体は含まない) ---
 .home-ide-developer/environment_name
 !.home-ide-developer/environment_name.template
 .home-ide-developer/current_repo
+.home-ide-developer/rate_limits_cache.json
 
 # --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
 /ghost/

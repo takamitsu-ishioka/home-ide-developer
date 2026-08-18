@@ -1,14 +1,12 @@
 #!/bin/bash
 # Claude Code statusLine: display the "current repository" (persisted at
-# <repo_local_dir.sh>/current_repo, see current_repo_set.sh).
+# <repo_local_dir.sh>/current_repo, see current_repo_set.sh). Also caches
+# this turn's rate_limits (5-hour/weekly usage %) to rate_limits_cache.json
+# next to it, for claude_rate_limit_report.sh to read on demand -- this
+# keeps OAuth credentials entirely inside Claude Code, never touched here.
 set -euo pipefail
 
-cat >/dev/null  # statusLine's stdin JSON isn't needed here; drain it.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_dir="$(repo_local_dir.sh 2>/dev/null || true)"
 
-repo_file="$(repo_local_dir.sh 2>/dev/null || true)/current_repo"
-
-if [ -s "$repo_file" ]; then
-  python3 -c "import json; print('repo: ' + json.load(open('$repo_file')).get('name', '?'))"
-else
-  echo "repo: (none)"
-fi
+python3 "$SCRIPT_DIR/current_repo_statusline.py" "${repo_dir}/current_repo" "${repo_dir}/rate_limits_cache.json"
