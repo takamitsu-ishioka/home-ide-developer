@@ -75,16 +75,21 @@ def list_sessions():
     for path in jsonl_files:
         session_id = os.path.splitext(os.path.basename(path))[0]
         ai_title = ''
+        custom_title = ''
         try:
             with open(path, encoding='utf-8') as f:
                 for line in f:
                     obj = json.loads(line)
                     if obj.get('type') == 'ai-title':
                         ai_title = obj.get('aiTitle', '')
+                    elif obj.get('type') == 'custom-title':
+                        custom_title = obj.get('customTitle', '')
         except Exception:
             continue
+        # A manually-set title (/rename) takes precedence over the
+        # AI-generated one; sessions renamed by hand carry no ai-title event.
         # mtime = time of the last write to this session file (last-appended message)
-        sessions.append((os.path.getmtime(path), session_id, ai_title))
+        sessions.append((os.path.getmtime(path), session_id, custom_title or ai_title))
 
     sessions.sort(reverse=True)
 
