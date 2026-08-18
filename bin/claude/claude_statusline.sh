@@ -11,6 +11,19 @@
 # Code's own process, never touched by that (or this) script.
 set -euo pipefail
 
+BASENAME="$(basename "$0")"
+
+if [ -t 0 ]; then
+  {
+    echo "$BASENAME: input is required (statusLine hook JSON on stdin)"
+    echo "usage: $BASENAME < hook_input.json"
+    echo "example: echo '{}' | $BASENAME"
+    echo
+    awk 'NR>1 && /^#/{sub(/^# ?/,""); print; next} NR>1{exit}' "$0"
+  } >&2
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(repo_local_dir.sh 2>/dev/null || true)"
 
