@@ -1,7 +1,7 @@
 """Implementation for claude_rate_limit_report.sh; do not run directly.
 
 Reports this machine's 5-hour/weekly Claude.ai rate-limit usage, read from
-the cache that current_repo_statusline.sh (this session's Claude Code
+the cache that claude_statusline.sh (this session's Claude Code
 statusLine hook) writes on every turn where Claude Code includes
 rate_limits in its status JSON. No network calls and no OAuth credentials
 are touched here -- Claude Code's own already-authenticated process is the
@@ -65,7 +65,7 @@ def main():
                 "seven_day": format_window(rate_limits.get("seven_day")),
                 "note": (
                     "From the local cache written by this machine's "
-                    "statusLine hook (current_repo_statusline.sh), not a "
+                    "statusLine hook (claude_statusline.sh), not a "
                     "live API call -- reflects usage as of captured_at, "
                     "which updates automatically after each turn in any "
                     "active Claude Code session on this machine."

@@ -1,4 +1,4 @@
-"""Implementation for current_repo_statusline.sh; do not run directly.
+"""Implementation for claude_statusline.sh; do not run directly.
 
 Claude Code statusLine hook: prints the "current repository" status-bar
 text, and -- as a side effect -- caches this turn's rate_limits (5-hour /

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Set the "current repository": persists across Claude Code sessions (not
 # session-scoped -- read back at the start of every future session via a
-# SessionStart hook, see current_repo_announce.sh) at
+# SessionStart hook, see bin/claude/claude_current_repo_announce.sh) at
 # <repo_local_dir.sh>/current_repo (not tracked in git -- machine-local,
 # same convention as environment_name there). Input: one JSON object
 # (path, name, branch, remote_url) on stdin, e.g. one element of

@@ -39,7 +39,7 @@
           },
           {
             "type": "command",
-            "command": "\"$HOME/bin/current_repo_announce.sh\" 2>/dev/null || true"
+            "command": "\"$HOME/bin/claude/claude_current_repo_announce.sh\" 2>/dev/null || true"
           }
         ]
       }
@@ -47,6 +47,6 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "$HOME/bin/current_repo_statusline.sh"
+    "command": "$HOME/bin/claude/claude_statusline.sh"
   }
 }

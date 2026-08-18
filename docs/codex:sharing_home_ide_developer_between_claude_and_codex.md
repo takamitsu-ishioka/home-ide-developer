@@ -123,8 +123,8 @@ home_ide_current_repo_set.sh
 一方、現在の更新・通知スクリプトはClaude Code中心である。
 
 - `current_repo_set.sh`: 共通化可能な書き込み処理
-- `current_repo_announce.sh`: Claude Code用アダプター
-- `current_repo_statusline.sh`: Claude Code用UIアダプター
+- `bin/claude/claude_current_repo_announce.sh`: Claude Code用アダプター(SessionStartフック)
+- `bin/claude/claude_statusline.sh`: Claude Code用UIアダプター(statusLineフック。副次的にrate_limitsもキャッシュする)
 
 Codex用には、同じデータをCodexが利用できる文脈へ変換する別アダプターが必要になる。
 
