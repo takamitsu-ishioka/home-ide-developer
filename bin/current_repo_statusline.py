@@ -8,7 +8,7 @@ entirely inside Claude Code's own process, never touched by scripts we write.
 """
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 def cache_rate_limits(status, cache_file):
@@ -18,7 +18,7 @@ def cache_rate_limits(status, cache_file):
     with open(cache_file, "w", encoding="utf-8") as f:
         json.dump(
             {
-                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "captured_at": datetime.now().astimezone().isoformat(),
                 "rate_limits": rate_limits,
             },
             f,

@@ -10,7 +10,7 @@ only thing that ever talks to the account-usage API.
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 def fail(message):
@@ -32,7 +32,7 @@ def format_window(window):
     return {
         "used_percentage": window.get("used_percentage"),
         "resets_at": (
-            datetime.fromtimestamp(resets_at, tz=timezone.utc).isoformat()
+            datetime.fromtimestamp(resets_at).astimezone().isoformat()
             if resets_at is not None
             else None
         ),
