@@ -102,7 +102,7 @@ def list_sessions():
         print(f'{session_id:<{col_id}}  {title}')
 
 
-if __name__ == '__main__':
+def main():
     if len(sys.argv) == 2 and sys.argv[1] == '--list':
         list_sessions()
     elif len(sys.argv) == 2:
@@ -111,3 +111,12 @@ if __name__ == '__main__':
         print(f'usage: {sys.argv[0]} <jsonl_path>', file=sys.stderr)
         print(f'       {sys.argv[0]} --list', file=sys.stderr)
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except BrokenPipeError:
+        # downstream (e.g. `| head`) stopped reading early; not an error
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        sys.exit(0)
