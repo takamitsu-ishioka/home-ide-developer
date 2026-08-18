@@ -11,6 +11,19 @@
 # directory is already correctly named by the time this resolves it.
 set -euo pipefail
 
+BASENAME="$(basename "$0")"
+
+if [ -t 0 ]; then
+  {
+    echo "$BASENAME: input is required (SessionStart hook JSON on stdin)"
+    echo "usage: $BASENAME < hook_input.json"
+    echo "example: echo '{}' | $BASENAME"
+    echo
+    awk 'NR>1 && /^#/{sub(/^# ?/,""); print; next} NR>1{exit}' "$0"
+  } >&2
+  exit 1
+fi
+
 cat >/dev/null  # SessionStart's stdin JSON isn't needed here; drain it.
 
 repo_file="$(repo_local_dir.sh 2>/dev/null || true)/current_repo"
