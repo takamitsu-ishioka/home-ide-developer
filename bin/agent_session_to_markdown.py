@@ -6,7 +6,9 @@ import sys
 from glob import glob
 from pathlib import Path
 
-import claude_session_to_markdown
+sys.path.insert(0, str(Path.home() / "bin" / "claude"))
+import claude_session_list  # noqa: E402
+import claude_session_to_markdown  # noqa: E402
 
 
 CODEX_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
@@ -110,16 +112,6 @@ def convert_codex_session(path):
     print("\n\n".join(sections))
 
 
-def find_claude_session(session_id):
-    pattern = os.path.expanduser(f"~/.claude/projects/**/{session_id}.jsonl")
-    matches = [path for path in glob(pattern, recursive=True)]
-    if not matches:
-        fail(f"Claude session not found: {session_id}")
-    if len(matches) > 1:
-        fail(f"Multiple Claude sessions found for ID: {session_id}")
-    return matches[0]
-
-
 def main():
     if len(sys.argv) != 3:
         fail("expected agent name and session ID or --list")
@@ -127,9 +119,11 @@ def main():
     agent_name, operation = sys.argv[1:]
     if agent_name == "claude":
         if operation == "--list":
-            claude_session_to_markdown.list_sessions()
+            claude_session_list.print_table(claude_session_list.iter_sessions())
         else:
-            claude_session_to_markdown.convert(find_claude_session(operation))
+            claude_session_to_markdown.convert(
+                claude_session_to_markdown.resolve_session_path(operation)
+            )
         return
 
     if agent_name == "codex":
@@ -149,3 +143,8 @@ if __name__ == "__main__":
         # downstream (e.g. `| head`) stopped reading early; not an error
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         sys.exit(0)
+    finally:
+        try:
+            sys.stdout.close()
+        except BrokenPipeError:
+            pass  # interpreter-shutdown flush of the (now devnull'd) stdout

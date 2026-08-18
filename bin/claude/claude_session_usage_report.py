@@ -13,11 +13,8 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from glob import glob
-from pathlib import Path
 
-sys.path.insert(0, str(Path.home() / "bin"))
-import claude_session_to_markdown  # noqa: E402 (for list_sessions(), reused as-is)
+import claude_session_list
 
 # Pricing per 1M tokens, USD (see ~/.claude/skills/claude-api "Current Models").
 # Cache economics have been stable since prompt caching launched: a cache read
@@ -50,16 +47,11 @@ def model_pricing(model, now):
     return PRICING.get(model)
 
 
-def find_session_jsonl(session_id):
-    pattern = os.path.expanduser(f"~/.claude/projects/**/{session_id}.jsonl")
-    matches = [
-        p for p in glob(pattern, recursive=True) if f"{os.sep}subagents{os.sep}" not in p
-    ]
-    if not matches:
+def find_session(session_id):
+    session = claude_session_list.find_session_by_id(session_id)
+    if not session:
         fail(f"session not found: {session_id}")
-    if len(matches) > 1:
-        fail(f"multiple sessions found for id: {session_id}")
-    return matches[0]
+    return session
 
 
 def read_jsonl(path):
@@ -142,16 +134,15 @@ def price_usage(by_model, now):
 
 
 def collect(session_id):
-    path = find_session_jsonl(session_id)
+    session = find_session(session_id)
     now = datetime.now(timezone.utc)
 
     timestamps = []
     active_ms = 0
-    title = ""
     code_totals = {"lines_added": 0, "lines_removed": 0}
     by_model = {}
 
-    for obj in read_jsonl(path):
+    for obj in read_jsonl(session["path"]):
         ts = obj.get("timestamp")
         if ts:
             timestamps.append(ts)
@@ -165,8 +156,6 @@ def collect(session_id):
                 add_code_changes(tool_use_result, code_totals)
         elif obj_type == "assistant":
             add_model_usage(obj.get("message", {}), by_model)
-        elif obj_type == "ai-title":
-            title = obj.get("aiTitle", title)
 
     total_cost_usd, unpriced_models = price_usage(by_model, now)
 
@@ -185,7 +174,7 @@ def collect(session_id):
 
     return {
         "session_id": session_id,
-        "title": title,
+        "title": session["title"],
         "period_start": period_start,
         "period_end": period_end,
         "total_cost_usd": total_cost_usd,
@@ -219,7 +208,7 @@ def main():
 
     arg = sys.argv[1]
     if arg == "--list":
-        claude_session_to_markdown.list_sessions()
+        claude_session_list.print_table(claude_session_list.iter_sessions())
         return
 
     print(json.dumps(collect(arg), ensure_ascii=False))
@@ -232,3 +221,8 @@ if __name__ == "__main__":
         # downstream (e.g. `| head`) stopped reading early; not an error
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         sys.exit(0)
+    finally:
+        try:
+            sys.stdout.close()
+        except BrokenPipeError:
+            pass  # interpreter-shutdown flush of the (now devnull'd) stdout
