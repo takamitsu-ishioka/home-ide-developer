@@ -3,9 +3,10 @@
 Called only from whereami.sh (see docs/CLAUDE.md scripting rules: python is
 always a thin-wrapped implementation, never run standalone).
 
-Fields: environment (LOCAL/ALPHA/BETA/PROD, from ~/environment_name --
-untracked, machine-local, see environment_name.template), hostname, cwd,
-git_repo, git_branch, git_remote, github_url (git_remote translated to its
+Fields: environment (LOCAL/ALPHA/BETA/PROD, from environment_name inside
+the repo-local data directory resolved via repo_local_dir.sh -- untracked,
+machine-local, see environment_name.template), hostname, cwd, git_repo,
+git_branch, git_remote, github_url (git_remote translated to its
 https://github.com/OWNER/REPO web page, only when the remote is actually a
 github.com one). Any field whose source is unavailable (no marker file,
 not inside a git repo, no "origin" remote, remote isn't github.com) is
@@ -20,7 +21,12 @@ from pathlib import Path
 
 
 def read_environment_name() -> str:
-    path = Path.home() / "environment_name"
+    result = subprocess.run(
+        ["repo_local_dir.sh"], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        return ""
+    path = Path(result.stdout.strip()) / "environment_name"
     if not path.exists():
         return ""
     return path.read_text().strip()
