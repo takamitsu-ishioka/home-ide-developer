@@ -1,9 +1,10 @@
 #!/bin/bash
-# claude をセッション選択つきで起動する
+# codex をセッション選択つきで起動する
 # 引数なし: どちらにするかを対話的に尋ねる
-# resume : 既存セッションをピッカー(-r)で選ばせて再開
-# new    : 新しいセッション名(-n)を受け取って開始
-# --remote-control home-ide-developer: enable remote control by the name "home-ide-developer"
+# resume : 既存セッションをピッカー(codex resume)で選ばせて再開
+# new    : 新しいセッションを開始する(任意で最初のプロンプトを渡せる)
+# 注: codex には claude の -n(セッション名を指定して開始)に相当するCLIオプションが無い。
+#     そのため new モードでは「名前」ではなく「最初のプロンプト」を任意で受け取る。
 
 SCRIPT=$(basename "$0")
 
@@ -13,7 +14,7 @@ function echo2() {
 
 function usage() {
   echo2 "$SCRIPT: $1"
-  echo2 "usage: $SCRIPT [resume|new] [session_name]"
+  echo2 "usage: $SCRIPT [resume|new] [initial_prompt]"
   echo2 "example: $SCRIPT"
   echo2 "example: $SCRIPT resume"
   echo2 "example: $SCRIPT new \"note記事の下書き整理\""
@@ -21,26 +22,29 @@ function usage() {
 }
 
 function launch_resume() {
-  exec claude --remote-control home-ide-developer -r
+  exec codex resume
 }
 
 function launch_new() {
-  local name="$1"
-  if [ -z "$name" ]; then
-    read -r -p "新しいセッション名: " name >&2
+  local prompt="$1"
+  if [ -n "$prompt" ]; then
+    exec codex "$prompt"
+  else
+    exec codex
   fi
-  [ -n "$name" ] || usage "セッション名が空です"
-  exec claude --remote-control home-ide-developer -n "$name"
 }
 
 case "$#" in
   0)
     echo2 "1) 既存セッションから選ぶ (resume)"
-    echo2 "2) 新しいセッションを名前をつけて開始 (new)"
+    echo2 "2) 新しいセッションを開始する (new)"
     read -r -p "選択 [1/2]: " choice
     case "$choice" in
       1) launch_resume ;;
-      2) launch_new "" ;;
+      2)
+        read -r -p "最初のプロンプト(省略可): " prompt
+        launch_new "$prompt"
+        ;;
       *) usage "不正な選択です: $choice" ;;
     esac
     ;;
