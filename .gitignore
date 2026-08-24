@@ -38,6 +38,8 @@ snap/
 !.claude/keybindings.json
 !.claude/skills/
 !.claude/skills/**
+!.claude/knowledge/
+!.claude/knowledge/**
 
 # --- シェル/エディタの履歴 (端末固有・二次情報) ---
 .bash_history
@@ -76,3 +78,4 @@ money/*.csv
 # --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
 /ghost/
 /mmwave/
+/note-article-manager/
