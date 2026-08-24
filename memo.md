@@ -44,3 +44,22 @@
 
 # misc
 - codex のトークン資源消費量を表示するスクリプト
+
+# 概念の整理
+- client vs server
+  - 軸: 依存関係
+  - client: 目的を持つ者 = 手段を利用する者
+  - server: 手段を持つ者 = 目的から利用される者
+  - 原理: 手段は目的に依存する (「クリーンアーキテクチャ」の中核概念)
+- inbound vs outbound
+  - 軸: 情報移転の向き
+  - inbound: 外から内へ
+  - outbound: 内から外へ
+- pull vs push
+  - 軸: 通信のイニシエーター
+  - pull: 情報を求める側がイニシエート
+  - push: 情報を与える側がイニシエート
+- internal vs external
+  - 軸: 視点
+  - internal: 系の内側から見る
+  - external: 系の外側から見る

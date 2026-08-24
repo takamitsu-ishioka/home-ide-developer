@@ -32,9 +32,53 @@ def load_regex(regex_name):
     return pattern, replacement
 
 
+def apply_spsp(content, pattern, replacement):
+    """Apply spsp outside fenced code and display-math blocks."""
+    result = []
+    in_fence = False
+    fence_char = None
+    in_math = False
+
+    for line in content.splitlines(keepends=True):
+        body = line[:-1] if line.endswith("\n") else line
+        newline = "\n" if line.endswith("\n") else ""
+        unquoted = re.sub(r"^(?:> *)*", "", body)
+
+        fence = re.match(r"^(`{3,}|~{3,})", unquoted)
+        if fence:
+            char = fence.group(1)[0]
+            if not in_math and (not in_fence or char == fence_char):
+                in_fence = not in_fence
+                fence_char = char if in_fence else None
+            result.append(line)
+            continue
+
+        math_delimiter = unquoted.strip()
+        if not in_fence and math_delimiter in {"$$", r"\[", r"\]"}:
+            if math_delimiter == "$$":
+                in_math = not in_math
+            elif math_delimiter == r"\[":
+                in_math = True
+            else:
+                in_math = False
+            result.append(line)
+            continue
+
+        if in_fence or in_math:
+            result.append(line)
+            continue
+
+        result.append(re.sub(pattern, replacement, body) + newline)
+
+    return "".join(result)
+
+
 def apply_all(content, regex_names):
     for name in regex_names:
         pattern, replacement = load_regex(name)
+        if name == "spsp":
+            content = apply_spsp(content, pattern, replacement)
+            continue
         prev = None
         while prev != content:
             prev = content
