@@ -1,0 +1,83 @@
+{
+  "_comment": "休憩トリガー(v2で追加): userの発言に「休憩し」を含むturnは休憩とみなす。以降、他のルールにマッチしないturnは休憩直前のticketを引き継ぐ(worklog_session_turns_guess_ticket.py参照)。他のルールより後段に置き、優先させること。",
+  "if": {
+    "property": "user",
+    "regex": "休憩し"
+  },
+  "ticket": "(休憩)"
+}
+ 
+{
+  "_comment": "AND例: cwdに56-carecomを含み、まだticketがGENERAL-451のままのturnをMMWAVE-828として再分類する",
+  "if": {
+    "and": [
+      {
+        "property": "cwd",
+        "regex": "56-carecom"
+      },
+      {
+        "property": "ticket",
+        "regex": "^GENERAL-451$"
+      }
+    ]
+  },
+  "ticket": "MMWAVE-828"
+}
+
+{
+  "_comment": "OR例: cwdがworktree-aまたはworktree-bならMMWAVE-999とする",
+  "if": {
+    "or": [
+      {
+        "property": "cwd",
+        "regex": "worktree-a"
+      },
+      {
+        "property": "cwd",
+        "regex": "worktree-b"
+      }
+    ]
+  },
+  "ticket": "MMWAVE-999"
+}
+
+{
+  "_comment": "NOT+配列プロパティ例: userの発言のどれかにcarecomを含み(大小文字無視)、かつ休憩センチネルではないturnをMMWAVE-828とする",
+  "if": {
+    "and": [
+      {
+        "property": "user",
+        "regex": "(?i)carecom"
+      },
+      {
+        "not": {
+          "property": "ticket",
+          "regex": "^\\(休憩\\)$"
+        }
+      }
+    ]
+  },
+  "ticket": "MMWAVE-828"
+}
+
+{
+  "_comment": "repoがnoneのturnならMMWAVE-843(入眠時刻改善評価 #221、当面の受け皿)とする。260827 山田喜三郎",
+  "if": {
+    "and": [
+      {
+        "property": "repo",
+        "regex": "^none$"
+      }
+    ]
+  },
+  "ticket": "MMWAVE-843"
+}
+
+{
+  "_comment": "フォールバック: 他に何の手がかりも無ければGENERAL-451(その他の雑多な作業(FY2026))とする。260827 山田喜三郎",
+  "if": true,
+  "ticket": "GENERAL-451"
+}
+{"_comment": "自動生成(worklog_guess_ticket_rules_update_suggest.py): キーワード'claude'とMMWAVE-886の類似度(特異度加重後)90(特異度0.90)", "if": {"property": "user", "regex": "claude"}, "ticket": "MMWAVE-886"}
+{"_comment": "自動生成(worklog_guess_ticket_rules_update_suggest.py): キーワード'環境'とMMWAVE-901の類似度(特異度加重後)55(特異度0.55)", "if": {"property": "user", "regex": "環境"}, "ticket": "MMWAVE-901"}
+{"_comment": "自動生成(worklog_guess_ticket_rules_update_suggest.py): キーワード'自宅センサー'とMMWAVE-891の類似度(特異度加重後)60(特異度1.00)", "if": {"property": "user", "regex": "自宅センサー"}, "ticket": "MMWAVE-891"}

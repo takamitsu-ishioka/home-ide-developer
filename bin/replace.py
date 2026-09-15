@@ -73,8 +73,39 @@ def apply_spsp(content, pattern, replacement):
     return "".join(result)
 
 
+def apply_codebold(content):
+    """Remove Markdown bold markers only inside fenced code blocks."""
+    result = []
+    in_fence = False
+    fence_char = None
+    bold = re.compile(r"\*\*(?=\S)(.*?\S)\*\*")
+
+    for line in content.splitlines(keepends=True):
+        unquoted = re.sub(r"^(?:> *)*", "", line)
+        fence = re.match(r"^(`{3,}|~{3,})", unquoted)
+        if fence:
+            char = fence.group(1)[0]
+            if not in_fence or char == fence_char:
+                in_fence = not in_fence
+                fence_char = char if in_fence else None
+            result.append(line)
+            continue
+
+        if in_fence:
+            prev = None
+            while prev != line:
+                prev = line
+                line = bold.sub(r"\1", line)
+        result.append(line)
+
+    return "".join(result)
+
+
 def apply_all(content, regex_names):
     for name in regex_names:
+        if name == "codebold":
+            content = apply_codebold(content)
+            continue
         pattern, replacement = load_regex(name)
         if name == "spsp":
             content = apply_spsp(content, pattern, replacement)

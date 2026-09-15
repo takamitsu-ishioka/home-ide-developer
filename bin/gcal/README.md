@@ -19,15 +19,18 @@ WSL2のlocalhost自動転送によりWindows側の既定ブラウザでそのま
 ## 予定を1件作成する
 
 ```bash
-./gcal_event_add.sh 2026-08-25 09:00 09:30 00:30 "週次会議データの見直し（計画も報告も2週間分）"
+./gcal_event_add.sh 2026-08-25 09:00 09:30 00:30 "週次会議データの見直し（計画も報告も2週間分）" none
 ```
 
-`date` `start_hm` `end_hm` `reminder` `title`は省略できない(既定値は無い)。`title`は1つの
-引数として渡す(空白を含む場合はクォートすること)。日時はローカルタイム(Asia/Tokyo)固定。
+`date` `start_hm` `end_hm` `reminder` `title` `description`は省略できない(既定値は無い)。
+`title`/`description`はそれぞれ1つの引数として渡す(空白を含む場合はクォートすること)。
+日時はローカルタイム(Asia/Tokyo)固定。
 
 `reminder`は予定の何時間何分前に通知するかを`HH:MM`で指定する(例: 30分前なら`00:30`、
 6時間前なら`06:00`)。通知不要なら`none`。カレンダーの既定通知(30分前)には頼らず、必ず
 明示的に指定する設計。
+
+`description`は予定の説明(Google Calendarの「説明」欄)。不要なら`none`。
 
 `--dry-run`/`--confirm`は独立したオプション(`~/.claude/CLAUDE.md`参照):
 
@@ -36,8 +39,8 @@ WSL2のlocalhost自動転送によりWindows側の既定ブラウザでそのま
 - `--confirm`: `--dry-run`の有無と無関係に、登録の直前にstdinでy/nの確認を求める
 
 ```bash
-./gcal_event_add.sh --dry-run 2026-08-25 09:00 09:30 00:30 "週次会議データの見直し（計画も報告も2週間分）"
-./gcal_event_add.sh --confirm 2026-08-25 09:00 09:30 00:30 "週次会議データの見直し（計画も報告も2週間分）"
+./gcal_event_add.sh --dry-run 2026-08-25 09:00 09:30 00:30 "週次会議データの見直し（計画も報告も2週間分）" none
+./gcal_event_add.sh --confirm 2026-08-25 09:00 09:30 00:30 "週次会議データの見直し（計画も報告も2週間分）" none
 ```
 
 成功するとstdoutへ`id, date, start_hm, end_hm, title`のTSV1行を出力する(idは後で

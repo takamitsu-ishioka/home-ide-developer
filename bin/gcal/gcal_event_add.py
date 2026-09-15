@@ -44,9 +44,9 @@ def main() -> int:
     dry_run = "--dry-run" in args
     confirm = "--confirm" in args
     positional = [a for a in args if a not in ("--dry-run", "--confirm")]
-    if len(positional) != 5:
-        fail(f"usage: {PROG} <date> <start_hm> <end_hm> <reminder> <title> [--dry-run] [--confirm]")
-    date_text, start_hm, end_hm, reminder_text, summary = positional
+    if len(positional) != 6:
+        fail(f"usage: {PROG} <date> <start_hm> <end_hm> <reminder> <title> <description> [--dry-run] [--confirm]")
+    date_text, start_hm, end_hm, reminder_text, summary, description_text = positional
 
     try:
         date_text = gcal_api.resolve_date(date_text).isoformat()
@@ -73,12 +73,15 @@ def main() -> int:
         "end": {"dateTime": f"{date_text}T{end_hm}:00", "timeZone": TIMEZONE},
         "reminders": reminders,
     }
+    if description_text != "none":
+        body["description"] = description_text
 
     print("入力:", file=sys.stderr)
     print(f"  カレンダー: {calendar_id}", file=sys.stderr)
     print(f"  日時     : {date_text} {start_hm}-{end_hm} ({TIMEZONE})", file=sys.stderr)
     print(f"  タイトル : {summary}", file=sys.stderr)
     print(f"  通知     : {reminder_text}", file=sys.stderr)
+    print(f"  説明     : {description_text}", file=sys.stderr)
     print(file=sys.stderr)
 
     if dry_run:

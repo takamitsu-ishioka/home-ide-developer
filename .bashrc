@@ -117,6 +117,7 @@ if ! shopt -oq posix; then
 fi
 
 export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/bin/ntfy:$PATH"
 export PATH="$HOME/bin/github:$PATH"
 export PATH="$HOME/bin/claude:$PATH"
 export PATH="$HOME/bin/codex:$PATH"

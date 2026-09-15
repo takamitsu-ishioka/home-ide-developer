@@ -1,0 +1,5 @@
+{"_comment": "AND例: cwdに56-carecomを含み、まだticketがGENERAL-451のままのturnをMMWAVE-828として再分類する", "if": {"and": [{"property": "cwd", "regex": "56-carecom"}, {"property": "ticket", "regex": "^GENERAL-451$"}]}, "ticket": "MMWAVE-828"}
+{"_comment": "OR例: cwdがworktree-aまたはworktree-bならMMWAVE-999とする", "if": {"or": [{"property": "cwd", "regex": "worktree-a"}, {"property": "cwd", "regex": "worktree-b"}]}, "ticket": "MMWAVE-999"}
+{"_comment": "NOT+配列プロパティ例: userの発言のどれかにcarecomを含み(大小文字無視)、かつ休憩センチネルではないturnをMMWAVE-828とする", "if": {"and": [{"property": "user", "regex": "(?i)carecom"}, {"not": {"property": "ticket", "regex": "^\\(休憩\\)$"}}]}, "ticket": "MMWAVE-828"}
+{"_comment": "フォールバック(v2でrepo=none条件からif:trueへ一般化): 他に何の手がかりも無く、休憩明けの継続対象も無いturnはMMWAVE-843(入眠時刻改善評価 #221、環境開発全般の受け皿)とする。意図的な仕様(開発環境整備という専用issueを切ると藪蛇になるため)。260825 山田喜三郎", "if": true, "ticket": "MMWAVE-843"}
+{"_comment": "休憩トリガー(v2で追加): userの発言に「休憩し」を含むturnは休憩とみなす。以降、他のルールにマッチしないturnは休憩直前のticketを引き継ぐ(worklog_session_turns_guess_ticket.py参照)。他のルールより後段に置き、優先させること。", "if": {"property": "user", "regex": "休憩し"}, "ticket": "(休憩)"}

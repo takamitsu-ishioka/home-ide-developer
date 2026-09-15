@@ -1,0 +1,3 @@
+{"_comment": "AND例: cwdに56-carecomを含み、まだticketがGENERAL-451のままのturnをMMWAVE-828として再分類する", "if": {"and": [{"property": "cwd", "regex": "56-carecom"}, {"property": "ticket", "regex": "^GENERAL-451$"}]}, "ticket": "MMWAVE-828"}
+{"_comment": "OR例: cwdがworktree-aまたはworktree-bならMMWAVE-999とする", "if": {"or": [{"property": "cwd", "regex": "worktree-a"}, {"property": "cwd", "regex": "worktree-b"}]}, "ticket": "MMWAVE-999"}
+{"_comment": "NOT+配列プロパティ例: userの発言のどれかにcarecomを含み(大小文字無視)、かつ休憩センチネルではないturnをMMWAVE-828とする", "if": {"and": [{"property": "user", "regex": "(?i)carecom"}, {"not": {"property": "ticket", "regex": "^\\(休憩\\)$"}}]}, "ticket": "MMWAVE-828"}

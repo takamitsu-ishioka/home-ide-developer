@@ -8,7 +8,7 @@
 
 ## 基本方針
 
-- 通知送信処理を`~/bin/ntfy/notify`へ集約する。
+- 通知送信処理を`~/bin/ntfy/ntfy_notification_send.sh`へ集約する。
 - 呼び出し側はntfyのURLや通信方式を意識しない。
 - 通知本文はコマンドライン引数または標準入力から受け取る。
 - トピック名は推測困難なランダム値とし、Git管理しない。
@@ -20,12 +20,12 @@
 
 ```text
 ~/bin/ntfy/
-├── design.md       # 本設計書
-├── notify          # 任意の文字列をntfyへ送信するコマンド
-└── config.example  # 設定ファイルの記入例（秘密情報を含めない）
-
-~/.config/ntfy/
-└── config          # 実際のトピック名など。権限600、Git管理外
+├── design.md                          # 本設計書
+├── ntfy_notification_send.sh          # 任意の文字列をntfyへ送る
+├── codex_turn_notification_send.sh    # Codex通知用アダプター
+├── codex_turn_notification_message.py # Codex JSONから安全な固定文を作る
+├── .env.template                      # 設定例
+└── .env                               # 実設定。権限600、Git管理外
 ```
 
 実際の設定ファイルは、次の形式を想定する。
@@ -34,6 +34,7 @@
 NTFY_SERVER=https://ntfy.sh
 NTFY_TOPIC=十分に長いランダムなトピック名
 NTFY_TITLE=作業通知
+NTFY_PRIORITY=default
 ```
 
 ## コマンド仕様
@@ -41,13 +42,13 @@ NTFY_TITLE=作業通知
 ### 引数から送信
 
 ```bash
-~/bin/ntfy/notify 'タイトル画像の生成が完了しました'
+~/bin/ntfy/ntfy_notification_send.sh 'タイトル画像の生成が完了しました'
 ```
 
 ### 標準入力から送信
 
 ```bash
-printf '%s\n' 'バックアップが完了しました' | ~/bin/ntfy/notify
+printf '%s\n' 'バックアップが完了しました' | ~/bin/ntfy/ntfy_notification_send.sh
 ```
 
 引数と標準入力の両方が指定された場合は引数を優先する。どちらも空の場合は使用法を表示して終了する。
@@ -63,13 +64,23 @@ HTTP送信には`curl`を使用し、本文は`--data-binary`で送る。通知�
 
 ```bash
 status=$?
-~/bin/ntfy/notify "処理終了: exit=$status" || true
+~/bin/ntfy/ntfy_notification_send.sh "処理終了: exit=$status" || true
 exit "$status"
 ```
 
 ## エージェントとの連携
 
-Claude Codeでは`Stop` hookから`~/bin/ntfy/notify`を呼び出す。`Stop`は依頼全体の完成時だけでなく応答終了時にも発火するため、通知文は「作業完了」ではなく「応答終了」または「確認してください」とする。
+Codexでは、ユーザー設定`~/.codex/config.toml`へ次を追加する。Codexの`notify`は
+`agent-turn-complete`時にJSONをコマンドライン引数として渡す。JSONには会話内容が含まれ得るため、
+アダプターはイベント種別だけを読み、スマートフォンには固定文だけを送る。
+
+```toml
+notify = ["/home/developer/bin/ntfy/codex_turn_notification_send.sh"]
+```
+
+この設定ファイルの変更は、ユーザーの明示的な承認後に行う。
+
+Claude Codeでは`Stop` hookから`~/bin/ntfy/ntfy_notification_send.sh`を呼び出す。`Stop`は依頼全体の完成時だけでなく応答終了時にも発火するため、通知文は「作業完了」ではなく「応答終了」または「確認してください」とする。
 
 設定例は次のとおり。ただし、既存の`~/.claude/settings.json`を確認し、現在の設定を保持したまま追加する。
 
@@ -81,7 +92,7 @@ Claude Codeでは`Stop` hookから`~/bin/ntfy/notify`を呼び出す。`Stop`は
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/bin/ntfy/notify 'Claude Codeの応答が終了しました' || true"
+            "command": "$HOME/bin/ntfy/ntfy_notification_send.sh 'Claude Codeの応答が終了しました' || true"
           }
         ]
       }
@@ -90,7 +101,7 @@ Claude Codeでは`Stop` hookから`~/bin/ntfy/notify`を呼び出す。`Stop`は
 }
 ```
 
-ほかのエージェントについては、公式の終了hookが利用できる場合は同じ`notify`コマンドを登録する。終了hookがない場合は、CLIを起動するラッパースクリプトから終了コードを通知する。
+ほかのエージェントについては、公式の終了hookが利用できる場合は同じ送信コマンドを登録する。終了hookがない場合は、CLIを起動するラッパースクリプトから終了コードを通知する。
 
 ## 通常のスクリプトとの連携
 
@@ -98,17 +109,17 @@ Claude Codeでは`Stop` hookから`~/bin/ntfy/notify`を呼び出す。`Stop`は
 
 ```bash
 run_the_job
-~/bin/ntfy/notify '処理が正常終了しました' || true
+~/bin/ntfy/ntfy_notification_send.sh '処理が正常終了しました' || true
 ```
 
 成功・失敗の両方を通知する例：
 
 ```bash
 if run_the_job; then
-  ~/bin/ntfy/notify '処理が正常終了しました' || true
+  ~/bin/ntfy/ntfy_notification_send.sh '処理が正常終了しました' || true
 else
   status=$?
-  ~/bin/ntfy/notify "処理に失敗しました: exit=$status" || true
+  ~/bin/ntfy/ntfy_notification_send.sh "処理に失敗しました: exit=$status" || true
   exit "$status"
 fi
 ```
@@ -127,9 +138,9 @@ fi
 
 agent:
 
-1. `~/bin/ntfy/notify`と`config.example`を作成する。
-2. 推測困難なトピック名を生成する。
-3. `~/.config/ntfy/config`を権限`600`で作成する。
+1. `~/bin/ntfy/ntfy_notification_send.sh`、Codex用アダプター、`.env.template`を作成する。
+2. ユーザーが推測困難なトピック名を生成する。
+3. ユーザーが`.env.template`を`.env`へコピーし、トピックを書き、権限`600`にする。
 4. テスト通知を送信し、ntfyが受理したことを確認する。
 5. ユーザーから受信確認を得る。
 6. ユーザーの明示的な許可後に、対象エージェントの終了hookを設定する。
@@ -145,7 +156,7 @@ user:
 
 ## 完了条件
 
-- `~/bin/ntfy/notify '任意の文字列'`でスマートフォンへ通知できる。
+- `~/bin/ntfy/ntfy_notification_send.sh '任意の文字列'`でスマートフォンへ通知できる。
 - 通知できない場合も、呼び出し元の本来の終了コードを保持できる。
 - トピック名がGit管理されず、設定ファイルが権限`600`になっている。
 - ユーザーがテスト通知の受信を確認している。

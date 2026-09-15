@@ -8,6 +8,7 @@ SCRIPT_NAME="$(basename "$0")"
 if [ $# -lt 1 ]; then
     REGEX_DIR="${SCRIPT_DIR}/replace.regex"
     AVAILABLE=$(ls "${REGEX_DIR}"/*.regex 2>/dev/null | xargs -I{} basename {} .regex | tr '\n' ',' | sed 's/,$//')
+    AVAILABLE="${AVAILABLE},codebold"
     echo "${SCRIPT_NAME}: Too few arguments" >&2
     echo "usage: ${SCRIPT_NAME} <names> [file]" >&2
     echo "example: ${SCRIPT_NAME} bold,chatgpt,me note.md" >&2

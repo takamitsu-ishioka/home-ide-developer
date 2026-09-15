@@ -1,3 +1,5 @@
 [user]
 	name = takamitsu-ishioka
 	email = ishioka@starship.jp
+[core]
+	quotepath = false
