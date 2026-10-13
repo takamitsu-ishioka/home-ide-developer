@@ -77,9 +77,16 @@ if [[ ! "$NTFY_SERVER" =~ ^https://[^[:space:]/]+/?$ ]]; then
   echo "Next: set NTFY_SERVER to a value such as https://ntfy.sh." >&2
   exit 1
 fi
-if [[ ! "$NTFY_TOPIC" =~ ^[A-Za-z0-9_-]{32,}$ ]]; then
-  echo "$SCRIPT_NAME: NTFY_TOPIC must contain at least 32 letters, digits, underscores, or hyphens." >&2
-  echo "Next: generate a topic with 'openssl rand -hex 24', write it to $ENV_FILE, and retry." >&2
+if [[ ! "$NTFY_TOPIC" =~ ^[A-Za-z0-9_-]+$ ]]; then
+  echo "$SCRIPT_NAME: NTFY_TOPIC may contain only letters, digits, underscores, and hyphens." >&2
+  echo "Next: edit NTFY_TOPIC in $ENV_FILE and retry." >&2
+  exit 1
+fi
+# A readable prefix is fine, but on a public server the topic name is the
+# only thing keeping strangers out, so part of it must be unguessable.
+if [[ ! "$NTFY_TOPIC" =~ [0-9a-f]{32} ]]; then
+  echo "$SCRIPT_NAME: NTFY_TOPIC has no random part, so anyone could guess it and read or spoof your notifications." >&2
+  echo "Next: run 'echo \"codex-turn-\$(openssl rand -hex 20)\"', write the result to $ENV_FILE, re-subscribe on the phone, and retry." >&2
   exit 1
 fi
 if [[ "$NTFY_TITLE" == *$'\n'* || "$NTFY_TITLE" == *$'\r'* ]]; then
