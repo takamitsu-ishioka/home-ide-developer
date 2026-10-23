@@ -1,0 +1,10 @@
+# Copy this file to teams_channels.local.tsv in the same directory. That file
+# is gitignored (see .gitignore) and never committed, because team and channel
+# names say where you work.
+#
+# due_watch が期限の一覧に取り込む Teams チャネル。team<TAB>channel を1行に1つ。
+# imc(~/imc)がこのチャネルを取得していること(~/imc/teams_channels.local.tsv にも
+# 同じ行が要る)。名前は imc_teams_channel_list.sh tsv の1・2列目と完全一致。
+#
+# team	channel
+#My Team	General

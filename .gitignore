@@ -75,6 +75,10 @@ money/*.csv
 .home-ide-developer/current_repo
 .home-ide-developer/rate_limits_cache.json
 
+# --- 勤務先が分かる情報 (.envと同様、.templateのみ追跡しユーザーが手動作成) ---
+bin/due_watch/teams_channels.local.tsv
+!bin/due_watch/teams_channels.local.tsv.template
+
 # --- 既に独立した git リポジトリ (物理モノリス配下だが別管理) ---
 /ghost/
 /imc/

@@ -1,0 +1,33 @@
+# このマシン(LOCAL, WSL)のuser crontab。bin/cron/cron_register.sh が全置換で登録する。
+# 「このマシンのcrontabはrepoが所有」— crontab -e での手動編集はここへ反映されず、
+# 次回 cron_register.sh 実行時に上書きされる。ジョブ追加はこのファイルを編集してcommitし、
+# cron_register.sh を再実行する。詳細は bin/cron/readme.md。
+#
+# 規約:
+#   - env代入行(PATH=等)はここに置かない。crond はこの行をshell展開しないため
+#     $HOME 等が使えず絶対パスになる。環境は cron_run.sh が cron.env から与える。
+#   - 各ジョブは cron_run.sh 経由で呼ぶ:
+#       <分> <時> <日> <月> <曜> "$HOME/bin/cron/cron_run.sh" <command> [args...]
+#     (コマンド欄は crond が $SHELL -c に渡すので $HOME は展開される)
+#   - 出力はジョブごとのログへ回す: ... >> "$HOME/bin/<domain>/_<job>.log" 2>&1
+#   - cron下では stdin が無いので --confirm 系の対話は使えない。副作用ゲートのある処理は
+#     人間セッションで行い、ジョブは取得・キャッシュ更新・通知までに留める。
+#
+# --- jobs ---
+
+# due_watch(旧 async_comm): Teams等の受信フローが吐いたメッセージを10分毎に取り込み、_cache.json を更新
+# (副作用は _cache.json のみ。通知やカレンダー変更は含まない)
+*/10 * * * * "$HOME/bin/cron/cron_run.sh" due_watch_poll.sh >> "$HOME/bin/due_watch/_poll.log" 2>&1
+
+# due_watch: imc(~/imc、別repo・公開)で経路ごとに未取得メッセージを Maildir+notmuch へ取得する。
+# 分担: imc = 経路ごとの取得だけ(手動でも動く。定期実行は持たない)/ due_watch = 定期実行とキャッシュ。
+# 経路ごとに別ジョブ(1経路の遅延・失敗が他を止めない)。mail/gmail は分をずらして poll(:00 系)と重ねない。
+# teams は 2026-10-16 から1分毎(1回 Graph 約6呼び出し・約3秒。mail/gmail と重なればロック待ち)。
+# 同時実行は imc 側の _var/fetch.lock で直列化される。副作用は imc の _var/ のみ。
+3-59/10 * * * * "$HOME/bin/cron/cron_run.sh" "$HOME/imc/imc_fetch.sh" mail >> "$HOME/bin/due_watch/_fetch_mail.log" 2>&1
+5-59/10 * * * * "$HOME/bin/cron/cron_run.sh" "$HOME/imc/imc_fetch.sh" gmail >> "$HOME/bin/due_watch/_fetch_gmail.log" 2>&1
+* * * * * "$HOME/bin/cron/cron_run.sh" "$HOME/imc/imc_fetch.sh" teams >> "$HOME/bin/due_watch/_fetch_teams.log" 2>&1
+
+# ログの日替わり切り替え: due_watch の各ログを <log>.<日付> へ移し、7日より前を消す。
+# この PC は毎晩止まるので日中(12:01)に。各ジョブは毎回 >> で開き直すので移動後も新しいログに書く。
+1 12 * * * "$HOME/bin/cron/cron_run.sh" cron_log_rotate.sh 7 "$HOME"/bin/due_watch/_*.log "$HOME/bin/cron/_log_rotate.log" >> "$HOME/bin/cron/_log_rotate.log" 2>&1
