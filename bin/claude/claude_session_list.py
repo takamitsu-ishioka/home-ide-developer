@@ -2,18 +2,30 @@
 
 Single source of truth for Claude Code session discovery/titling, reused
 (via `import claude_session_list`) by claude_session_to_markdown.py,
-claude_session_cleanup.py, and claude_session_usage_report.py.
+claude_session_cleanup.py, claude_session_today_find.py, and
+claude_session_resolve.py (used by claude_launch.sh). Also the single
+source of truth for the display record shape (title first, ctime added,
+mtime as ISO-localtime) via to_record()/RECORD_FIELDS, reused by this
+script's own json output and by claude_session_today_find.py's tsv/json
+output.
 """
 import json
 import os
+import re
+import subprocess
 import sys
+from datetime import datetime
 from glob import glob
+
+
+class SessionResolutionError(Exception):
+    """Raised by resolve_session() when arg matches none or more than one session."""
 
 
 def iter_sessions():
     """Return every top-level session (excludes subagents/ transcripts),
     newest by mtime first, as dicts with session_id/path/mtime/title/
-    message_count."""
+    message_count/cwd."""
     projects_dir = os.path.expanduser("~/.claude/projects")
     jsonl_files = [
         path
@@ -27,6 +39,7 @@ def iter_sessions():
         ai_title = ""
         custom_title = ""
         message_count = 0
+        cwd = None
         try:
             with open(path, encoding="utf-8") as f:
                 for line in f:
@@ -34,6 +47,8 @@ def iter_sessions():
                         obj = json.loads(line)
                     except json.JSONDecodeError:
                         continue
+                    if cwd is None and obj.get("cwd"):
+                        cwd = obj["cwd"]
                     obj_type = obj.get("type")
                     if obj_type == "ai-title":
                         ai_title = obj.get("aiTitle", "")
@@ -51,6 +66,7 @@ def iter_sessions():
                 # a manual rename (/rename) takes precedence over the AI-generated title
                 "title": custom_title or ai_title,
                 "message_count": message_count,
+                "cwd": cwd,
             }
         )
 
@@ -63,6 +79,68 @@ def find_session_by_id(session_id):
         if session["session_id"] == session_id:
             return session
     return None
+
+
+def resolve_session(arg):
+    """Resolve arg to a single session dict: tries an exact session_id match
+    first, then falls back to a regex matched against session titles. Raises
+    SessionResolutionError if arg matches no session or more than one."""
+    exact = find_session_by_id(arg)
+    if exact:
+        return exact
+
+    try:
+        regex = re.compile(arg)
+    except re.error as e:
+        raise SessionResolutionError(f"'{arg}' is neither a known session_id nor a valid title regex ({e})")
+
+    candidates = [s for s in iter_sessions() if s["title"] and regex.search(s["title"])]
+    if not candidates:
+        raise SessionResolutionError(f"no session found matching id or title regex: {arg}")
+    if len(candidates) > 1:
+        listing = "\n".join(f"  {c['session_id']}  {c['title']}" for c in candidates)
+        raise SessionResolutionError(f"title regex matched {len(candidates)} sessions, narrow it down:\n{listing}")
+    return candidates[0]
+
+
+RECORD_FIELDS = ("title", "session_id", "path", "ctime", "mtime", "message_count", "cwd")
+
+
+def to_iso_localtime(epoch):
+    """Convert a Unix epoch (float) to an ISO 8601 string in local time."""
+    return datetime.fromtimestamp(epoch).astimezone().isoformat()
+
+
+def get_birthtime(path):
+    """Return the file's true creation time (Unix epoch, float).
+
+    os.path.getctime()/os.stat().st_ctime is the inode's metadata-change
+    time, not creation time - on Linux it advances on every write, so for
+    an append-only session log it ends up equal to mtime. The kernel/
+    filesystem here does track true birth time (`stat` shows a `Birth:`
+    line), but Python's os.stat() doesn't expose it on Linux, so shell out
+    to `stat -c %W`. Falls back to ctime if the filesystem doesn't support
+    birth time (%W prints 0 in that case).
+    """
+    birthtime = int(subprocess.run(["stat", "-c", "%W", path], capture_output=True, text=True, check=True).stdout)
+    return float(birthtime) if birthtime > 0 else os.path.getctime(path)
+
+
+def to_record(session):
+    """Reshape an iter_sessions() dict into the display record used by this
+    script's json output and by claude_session_today_find.py: title first,
+    ctime added (true file creation time, not tracked by iter_sessions),
+    and ctime/mtime both rendered as ISO-localtime instead of a raw
+    epoch."""
+    return {
+        "title": session["title"],
+        "session_id": session["session_id"],
+        "path": session["path"],
+        "ctime": to_iso_localtime(get_birthtime(session["path"])),
+        "mtime": to_iso_localtime(session["mtime"]),
+        "message_count": session["message_count"],
+        "cwd": session["cwd"],
+    }
 
 
 def print_table(sessions, stream=sys.stdout):
@@ -83,7 +161,7 @@ def main():
 
     sessions = iter_sessions()
     if sys.argv[1] == "json":
-        print(json.dumps(sessions, ensure_ascii=False))
+        print(json.dumps([to_record(s) for s in sessions], ensure_ascii=False))
         return
 
     for s in sessions:
@@ -94,6 +172,7 @@ def main():
                     s["title"],
                     str(s["message_count"]),
                     str(int(s["mtime"])),
+                    s["cwd"] or "",
                     s["path"],
                 ]
             )

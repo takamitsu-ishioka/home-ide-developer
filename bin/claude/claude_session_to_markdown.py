@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime
 
 import claude_session_list
 
@@ -45,6 +46,10 @@ def extract_assistant_text(content):
     return "\n\n".join(parts)
 
 
+def format_local_timestamp(iso_timestamp):
+    return datetime.fromisoformat(iso_timestamp).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+
+
 def convert(jsonl_path):
     messages = []
     with open(jsonl_path, encoding="utf-8") as f:
@@ -63,41 +68,26 @@ def convert(jsonl_path):
             else:
                 text = extract_assistant_text(content)
             if text:
-                messages.append((t, text))
+                messages.append((t, text, obj.get("timestamp")))
 
     out = []
-    for role, text in messages:
+    for role, text, timestamp in messages:
         heading = "## 私：" if role == "user" else "## Claude:"
+        if timestamp:
+            heading = f"{heading} {format_local_timestamp(timestamp)}"
         out.append(f"{heading}\n{text}")
 
     print("\n\n".join(out))
 
 
-def resolve_session_path(arg):
-    exact = claude_session_list.find_session_by_id(arg)
-    if exact:
-        return exact["path"]
-
-    try:
-        regex = re.compile(arg)
-    except re.error as e:
-        fail(f"'{arg}' is neither a known session_id nor a valid title regex ({e})")
-
-    candidates = [
-        s for s in claude_session_list.iter_sessions() if s["title"] and regex.search(s["title"])
-    ]
-    if not candidates:
-        fail(f"no session found matching id or title regex: {arg}")
-    if len(candidates) > 1:
-        listing = "\n".join(f"  {c['session_id']}  {c['title']}" for c in candidates)
-        fail(f"title regex matched {len(candidates)} sessions, narrow it down:\n{listing}")
-    return candidates[0]["path"]
-
-
 def main():
     if len(sys.argv) != 2:
         fail("expected exactly one argument: <session_id> or <title_regex>")
-    convert(resolve_session_path(sys.argv[1]))
+    try:
+        session = claude_session_list.resolve_session(sys.argv[1])
+    except claude_session_list.SessionResolutionError as e:
+        fail(str(e))
+    convert(session["path"])
 
 
 if __name__ == "__main__":

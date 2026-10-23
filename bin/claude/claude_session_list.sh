@@ -1,5 +1,5 @@
 #!/bin/bash
-# List Claude Code sessions (session_id, title, message_count, mtime, path),
+# List Claude Code sessions (session_id, title, message_count, mtime, cwd, path),
 # excluding subagents/ (forked-agent transcripts, not top-level sessions),
 # newest first.
 set -euo pipefail
@@ -11,7 +11,7 @@ usage() {
   {
     echo "$BASENAME: $1"
     echo "usage: $BASENAME <tsv|json>"
-    echo "example: $BASENAME tsv | column -t -s \$'\\t'"
+    echo "example: $BASENAME tsv | column -t -s \$'\t'"
     echo
     awk 'NR>1 && /^#/{sub(/^# ?/,""); print; next} NR>1{exit}' "$0"
   } >&2
