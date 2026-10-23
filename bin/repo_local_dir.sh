@@ -14,7 +14,7 @@ usage() {
   {
     echo "$BASENAME: $1"
     echo "usage: $BASENAME"
-    echo "example: dir=\"\$($BASENAME)\" && cat \"\$dir/current_repo\""
+    echo "example: dir=\"\$($BASENAME)\" && cat \"\$dir/environment_name\""
     echo
     awk 'NR>1 && /^#/{sub(/^# ?/,""); print; next} NR>1{exit}' "$0"
   } >&2

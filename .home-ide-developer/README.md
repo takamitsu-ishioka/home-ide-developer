@@ -45,8 +45,8 @@ URLをその場で解析して名前として使うと、たまたま合って�
 - `environment_name` / `environment_name.template` — このマシンの環境名
   (LOCAL/ALPHA/BETA/PROD)。`.env`と同様、実体(`environment_name`)は
   machine-local につき.gitignore対象、テンプレートのみ追跡
-- `current_repo` — Claude Codeセッションの「カレント・リポジトリ」状態
-  (`current_repo_set.sh`が自動生成。machine-localにつき.gitignore対象)
+- `rate_limits_cache.json` — Claude.aiのレート制限%
+  (`claude_statusline.sh`が自動生成。machine-localにつき.gitignore対象)
 
 「ルート・ローカル・リポジトリ」であるがゆえに、複数のローカルリポジトリ
 (例: `ghost`)を横断する状態も、ここにまとめて置いています。

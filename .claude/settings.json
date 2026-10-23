@@ -36,10 +36,6 @@
           {
             "type": "command",
             "command": "\"$HOME/bin/repo_name_sync.sh\" 2>/dev/null || true"
-          },
-          {
-            "type": "command",
-            "command": "\"$HOME/bin/claude/claude_current_repo_announce.sh\" 2>/dev/null || true"
           }
         ]
       }
