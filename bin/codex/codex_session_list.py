@@ -1,9 +1,18 @@
-"""Shared Codex session discovery used by the codex_session_* scripts."""
+"""Shared Codex session discovery used by the codex_session_* scripts.
+
+Also the single source of truth for resolving a session_id-or-title-regex
+argument (resolve_session(), used by codex_session_resolve.py and
+codex_session_to_markdown.py)."""
 import json
 import os
+import re
 import sqlite3
 import sys
 from glob import glob
+
+
+class SessionResolutionError(Exception):
+    """Raised by resolve_session() when arg matches none or more than one session."""
 
 
 def read_jsonl(path):
@@ -46,13 +55,15 @@ def state_rows():
 def metadata(path):
     session_id = ""
     timestamp = None
+    cwd = None
     for obj in read_jsonl(path):
         if obj.get("type") == "session_meta":
             payload = obj.get("payload") or {}
             session_id = payload.get("id") or payload.get("session_id") or ""
             timestamp = payload.get("timestamp")
+            cwd = payload.get("cwd")
             break
-    return session_id, timestamp
+    return session_id, timestamp, cwd
 
 
 def iter_sessions():
@@ -61,7 +72,7 @@ def iter_sessions():
     rows = state_rows()
     sessions = []
     for path in paths:
-        session_id, _ = metadata(path)
+        session_id, _, cwd = metadata(path)
         if not session_id:
             session_id = os.path.splitext(os.path.basename(path))[0].rsplit("-", 5)[-1]
         row = rows.get(session_id, {})
@@ -86,6 +97,7 @@ def iter_sessions():
                 "archived": bool(row.get("archived", False)),
                 "model": row.get("model"),
                 "source": row.get("source"),
+                "cwd": cwd,
             }
         )
     sessions.sort(key=lambda session: session["mtime"], reverse=True)
@@ -94,6 +106,28 @@ def iter_sessions():
 
 def find_session_by_id(session_id):
     return next((session for session in iter_sessions() if session["session_id"] == session_id), None)
+
+
+def resolve_session(arg):
+    """Resolve arg to a single session dict: tries an exact session_id match
+    first, then falls back to a regex matched against session titles. Raises
+    SessionResolutionError if arg matches no session or more than one."""
+    exact = find_session_by_id(arg)
+    if exact:
+        return exact
+
+    try:
+        regex = re.compile(arg)
+    except re.error as e:
+        raise SessionResolutionError(f"'{arg}' is neither a known session_id nor a valid title regex ({e})")
+
+    candidates = [s for s in iter_sessions() if s["title"] and regex.search(s["title"])]
+    if not candidates:
+        raise SessionResolutionError(f"no session found matching id or title regex: {arg}")
+    if len(candidates) > 1:
+        listing = "\n".join(f"  {c['session_id']}  {c['title']}" for c in candidates)
+        raise SessionResolutionError(f"title regex matched {len(candidates)} sessions, narrow it down:\n{listing}")
+    return candidates[0]
 
 
 def print_table(sessions, stream=sys.stdout):

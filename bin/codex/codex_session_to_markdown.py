@@ -60,28 +60,14 @@ def convert(session):
         print(text)
 
 
-def resolve_session(arg):
-    exact = codex_session_list.find_session_by_id(arg)
-    if exact:
-        return exact
-    try:
-        regex = re.compile(arg)
-    except re.error as error:
-        fail(f"'{arg}' is neither a known session_id nor a valid title regex ({error})")
-    candidates = [item for item in codex_session_list.iter_sessions()
-                  if item["title"] and regex.search(item["title"])]
-    if not candidates:
-        fail(f"no session found matching id or title regex: {arg}")
-    if len(candidates) > 1:
-        listing = "\n".join(f"  {item['session_id']}  {item['title']}" for item in candidates)
-        fail(f"title regex matched {len(candidates)} sessions, narrow it down:\n{listing}")
-    return candidates[0]
-
-
 def main():
     if len(sys.argv) != 2:
         fail("expected exactly one argument: <session_id> or <title_regex>")
-    convert(resolve_session(sys.argv[1]))
+    try:
+        session = codex_session_list.resolve_session(sys.argv[1])
+    except codex_session_list.SessionResolutionError as e:
+        fail(str(e))
+    convert(session)
 
 
 if __name__ == "__main__":
