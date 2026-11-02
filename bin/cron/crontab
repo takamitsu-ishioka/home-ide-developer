@@ -28,6 +28,12 @@
 5-59/10 * * * * "$HOME/bin/cron/cron_run.sh" "$HOME/imc/imc_fetch.sh" gmail >> "$HOME/bin/due_watch/_fetch_gmail.log" 2>&1
 * * * * * "$HOME/bin/cron/cron_run.sh" "$HOME/imc/imc_fetch.sh" teams >> "$HOME/bin/due_watch/_fetch_teams.log" 2>&1
 
+# starship_jp: www.starship.jp の各ユーザーの INBOX が 500 通を超えたら ntfy で通知する。
+# 通知本文に削除のコマンドライン(starship_mail_old_delete.sh)が入るので、存在を覚えていなくてよい。
+# 2026-11-02、1313 通溜まっていたのを Denshin8 で手作業削除したのがきっかけ。副作用は通知のみ。
+# この PC は毎晩止まるので日中(12:11)に。超えている間は毎日1回届く。
+11 12 * * * "$HOME/bin/cron/cron_run.sh" "$HOME/bin/starship_jp/starship_mail_count_watch.sh" 500 ishioka information kisaburo kisaburo_shop kokontei paypal ishioka-facilitator >> "$HOME/bin/starship_jp/_mail_count_watch.log" 2>&1
+
 # ログの日替わり切り替え: due_watch の各ログを <log>.<日付> へ移し、7日より前を消す。
 # この PC は毎晩止まるので日中(12:01)に。各ジョブは毎回 >> で開き直すので移動後も新しいログに書く。
-1 12 * * * "$HOME/bin/cron/cron_run.sh" cron_log_rotate.sh 7 "$HOME"/bin/due_watch/_*.log "$HOME/bin/cron/_log_rotate.log" >> "$HOME/bin/cron/_log_rotate.log" 2>&1
+1 12 * * * "$HOME/bin/cron/cron_run.sh" cron_log_rotate.sh 7 "$HOME"/bin/due_watch/_*.log "$HOME/bin/starship_jp/_mail_count_watch.log" "$HOME/bin/cron/_log_rotate.log" >> "$HOME/bin/cron/_log_rotate.log" 2>&1
